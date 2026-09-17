@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'screens/home_page.dart';
 import 'screens/stopwatch_page.dart';
 import 'screens/bantuan_page.dart';
+import 'screens/login_page.dart';
+import 'services/session_service.dart';
 
 void main() {
   runApp(const EduMateApp());
@@ -20,8 +22,46 @@ class EduMateApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      home: const MainPage(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const StartPage(),
+        '/login': (context) => const LoginPage(),
+        '/home': (context) => const MainPage(),
+      },
     );
+  }
+}
+
+class StartPage extends StatefulWidget {
+  const StartPage({super.key});
+
+  @override
+  State<StartPage> createState() => _StartPageState();
+}
+
+class _StartPageState extends State<StartPage> {
+  @override
+  void initState() {
+    super.initState();
+
+    checkSession();
+  }
+
+  Future<void> checkSession() async {
+    final loggedIn = await SessionService.isLoggedIn();
+
+    if (!mounted) return;
+
+    if (loggedIn) {
+      Navigator.pushReplacementNamed(context, '/home');
+    } else {
+      Navigator.pushReplacementNamed(context, '/login');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }
 
@@ -41,7 +81,6 @@ class _MainPageState extends State<MainPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: pages[selectedIndex],
-
       bottomNavigationBar: NavigationBar(
         selectedIndex: selectedIndex,
         onDestinationSelected: (index) {

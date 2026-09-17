@@ -22,6 +22,32 @@ class _KalenderPageState extends State<KalenderPage> {
     'Minggu',
   ];
 
+  // Daftar tanggal Nyepi sebagai awal tahun Saka.
+  // Format: tahun Masehi -> tanggal Nyepi pada tahun tersebut.
+  final Map<int, DateTime> tanggalNyepi = {
+    2020: DateTime(2020, 3, 25),
+    2021: DateTime(2021, 3, 14),
+    2022: DateTime(2022, 3, 3),
+    2023: DateTime(2023, 3, 22),
+    2024: DateTime(2024, 3, 11),
+    2025: DateTime(2025, 3, 29),
+    2026: DateTime(2026, 3, 19),
+    2027: DateTime(2027, 3, 8),
+    2028: DateTime(2028, 3, 26),
+    2029: DateTime(2029, 3, 15),
+    2030: DateTime(2030, 3, 5),
+    2031: DateTime(2031, 3, 23),
+    2032: DateTime(2032, 3, 12),
+    2033: DateTime(2033, 3, 31),
+    2034: DateTime(2034, 3, 20),
+    2035: DateTime(2035, 3, 10),
+    2036: DateTime(2036, 2, 27),
+    2037: DateTime(2037, 3, 17),
+    2038: DateTime(2038, 3, 6),
+    2039: DateTime(2039, 3, 24),
+    2040: DateTime(2040, 3, 13),
+  };
+
   Future<void> pilihTanggal() async {
     final DateTime? hasil = await showDatePicker(
       context: context,
@@ -42,10 +68,15 @@ class _KalenderPageState extends State<KalenderPage> {
   }
 
   String hitungPasaran(DateTime tanggal) {
-    // 1 Januari 1970 digunakan sebagai tanggal acuan.
-    // Pasaran pada tanggal acuan: Wage.
-    final tanggalAcuan = DateTime(1970, 1, 1);
+    /*
+      1 Januari 1970 digunakan sebagai tanggal acuan.
+      Pasaran pada tanggal tersebut adalah Wage.
 
+      Urutan pasaran:
+      Legi → Pahing → Pon → Wage → Kliwon
+    */
+
+    final tanggalAcuan = DateTime(1970, 1, 1);
     final selisihHari = tanggal.difference(tanggalAcuan).inDays;
 
     const indexAcuan = 3; // Wage
@@ -61,38 +92,65 @@ class _KalenderPageState extends State<KalenderPage> {
     return '${namaHari(tanggal)} ${hitungPasaran(tanggal)}';
   }
 
-  String hitungTahunSaka(DateTime tanggal) {
+  int hitungTahunSaka(DateTime tanggal) {
     /*
-      Tahun Saka berganti pada Nyepi yang umumnya berada
-      sekitar bulan Maret.
+      Tahun Saka berganti pada Hari Raya Nyepi.
 
-      Untuk tahap awal:
-      - Januari sampai sebelum pergantian Saka:
-        tahun Masehi - 79
-      - Setelah pergantian Saka:
-        tahun Masehi - 78
+      Sebelum Nyepi:
+        Tahun Saka = Tahun Masehi - 79
 
-      Perhitungan batas Nyepi akan kita sempurnakan
-      pada tahap kalender Bali lengkap.
+      Pada dan setelah Nyepi:
+        Tahun Saka = Tahun Masehi - 78
     */
 
-    if (tanggal.month < 3) {
-      return '${tanggal.year - 79} Saka';
+    final nyepi = tanggalNyepi[tanggal.year];
+
+    if (nyepi != null) {
+      if (tanggal.isBefore(nyepi)) {
+        return tanggal.year - 79;
+      }
+
+      return tanggal.year - 78;
     }
 
-    return '${tanggal.year - 78} Saka';
+    // Fallback apabila tahun yang dipilih
+    // belum tersedia dalam daftar Nyepi.
+    if (tanggal.month < 3) {
+      return tanggal.year - 79;
+    }
+
+    return tanggal.year - 78;
+  }
+
+  String namaBulan(int bulan) {
+    const namaBulan = [
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember',
+    ];
+
+    return namaBulan[bulan - 1];
   }
 
   String formatTanggal(DateTime tanggal) {
-    return '${tanggal.day.toString().padLeft(2, '0')}/'
-        '${tanggal.month.toString().padLeft(2, '0')}/'
+    return '${tanggal.day.toString().padLeft(2, '0')} '
+        '${namaBulan(tanggal.month)} '
         '${tanggal.year}';
   }
 
   @override
   Widget build(BuildContext context) {
-    final weton = hitungWeton(tanggalDipilih);
-    final saka = hitungTahunSaka(tanggalDipilih);
+    final String weton = hitungWeton(tanggalDipilih);
+    final int tahunSaka = hitungTahunSaka(tanggalDipilih);
 
     return Scaffold(
       appBar: AppBar(
@@ -112,13 +170,16 @@ class _KalenderPageState extends State<KalenderPage> {
             const SizedBox(height: 8),
 
             const Text(
-              'Pilih tanggal untuk melihat informasi kalender.',
+              'Pilih tanggal untuk melihat informasi Weton Jawa dan Tahun Saka Bali.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey),
             ),
 
             const SizedBox(height: 25),
 
+            // =========================
+            // TANGGAL
+            // =========================
             Card(
               elevation: 2,
               child: Padding(
@@ -164,6 +225,9 @@ class _KalenderPageState extends State<KalenderPage> {
 
             const SizedBox(height: 20),
 
+            // =========================
+            // WETON JAWA
+            // =========================
             Card(
               elevation: 2,
               child: Padding(
@@ -192,9 +256,11 @@ class _KalenderPageState extends State<KalenderPage> {
                       ),
                     ),
 
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
 
                     Text('Hari: ${namaHari(tanggalDipilih)}'),
+
+                    const SizedBox(height: 5),
 
                     Text('Pasaran: ${hitungPasaran(tanggalDipilih)}'),
                   ],
@@ -204,6 +270,9 @@ class _KalenderPageState extends State<KalenderPage> {
 
             const SizedBox(height: 20),
 
+            // =========================
+            // SAKA BALI
+            // =========================
             Card(
               elevation: 2,
               child: Padding(
@@ -225,17 +294,24 @@ class _KalenderPageState extends State<KalenderPage> {
                     const SizedBox(height: 10),
 
                     Text(
-                      saka,
+                      '$tahunSaka Saka',
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
 
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
+
+                    Text(
+                      'Tanggal: ${formatTanggal(tanggalDipilih)}',
+                      textAlign: TextAlign.center,
+                    ),
+
+                    const SizedBox(height: 5),
 
                     const Text(
-                      'Informasi kalender Saka Bali',
+                      'Tahun Saka berganti pada Hari Raya Nyepi.',
                       textAlign: TextAlign.center,
                     ),
                   ],
