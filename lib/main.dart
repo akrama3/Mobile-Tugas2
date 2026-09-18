@@ -1,17 +1,18 @@
-import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 
 import 'firebase_options.dart';
-
 import 'screens/home_page.dart';
 import 'screens/stopwatch_page.dart';
 import 'screens/bantuan_page.dart';
 import 'screens/login_page.dart';
+import 'services/session_service.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   runApp(const EduMateApp());
 }
 
@@ -53,11 +54,11 @@ class _StartPageState extends State<StartPage> {
   }
 
   Future<void> checkSession() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final loggedIn = await SessionService.isLoggedIn();
 
     if (!mounted) return;
 
-    if (user != null) {
+    if (loggedIn) {
       Navigator.pushReplacementNamed(context, '/home');
     } else {
       Navigator.pushReplacementNamed(context, '/login');
