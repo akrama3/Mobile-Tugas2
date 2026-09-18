@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-
-import '../services/session_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -18,12 +17,12 @@ class _LoginPageState extends State<LoginPage> {
   bool isLoading = false;
 
   Future<void> login() async {
-    final username = usernameController.text.trim();
+    final email = usernameController.text.trim();
     final password = passwordController.text.trim();
 
-    if (username.isEmpty || password.isEmpty) {
+    if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Username dan password harus diisi.')),
+        const SnackBar(content: Text('Email dan password harus diisi.')),
       );
       return;
     }
@@ -32,27 +31,20 @@ class _LoginPageState extends State<LoginPage> {
       isLoading = true;
     });
 
-    /*
-      LOGIN SEMENTARA
-
-      Username : admin
-      Password : admin123
-
-      Nanti bagian ini akan diganti dengan
-      login melalui PHP API + MySQL.
-    */
-
-    if (username == 'admin' && password == 'admin123') {
-      await SessionService.saveLogin(username);
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
       if (!mounted) return;
 
       Navigator.pushReplacementNamed(context, '/home');
-    } else {
+    } on FirebaseAuthException catch (e) {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Username atau password salah.')),
+        SnackBar(content: Text(e.message ?? 'Email atau password salah.')),
       );
     }
 
@@ -112,9 +104,10 @@ class _LoginPageState extends State<LoginPage> {
 
                 TextField(
                   controller: usernameController,
+                  keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
-                    labelText: 'Username',
-                    hintText: 'Masukkan username',
+                    labelText: 'Email',
+                    hintText: 'Masukkan email',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.person),
                   ),
@@ -178,7 +171,7 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 5),
 
                 const Text(
-                  'Username: admin\nPassword: admin123',
+                  'Email: admin@edumate.com\nPassword: admin123',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.grey),
                 ),
