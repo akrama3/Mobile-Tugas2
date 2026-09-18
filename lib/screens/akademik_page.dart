@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AkademikPage extends StatefulWidget {
   const AkademikPage({super.key});
@@ -8,14 +9,8 @@ class AkademikPage extends StatefulWidget {
 }
 
 class _AkademikPageState extends State<AkademikPage> {
-  final List<Map<String, dynamic>> dataAkademik = [
-    {
-      'nama': 'Contoh Mahasiswa',
-      'nim': '12345678',
-      'mataKuliah': 'Manajemen Basis Data',
-      'nilai': 85.0,
-    },
-  ];
+  final CollectionReference akademikRef = FirebaseFirestore.instance
+      .collection('akademik');
 
   void tambahData() {
     final namaController = TextEditingController();
@@ -75,7 +70,7 @@ class _AkademikPageState extends State<AkademikPage> {
               child: const Text('Batal'),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 final nama = namaController.text.trim();
                 final nim = nimController.text.trim();
                 final mataKuliah = mataKuliahController.text.trim();
@@ -102,16 +97,14 @@ class _AkademikPageState extends State<AkademikPage> {
                   return;
                 }
 
-                setState(() {
-                  dataAkademik.add({
-                    'nama': nama,
-                    'nim': nim,
-                    'mataKuliah': mataKuliah,
-                    'nilai': nilai,
-                  });
+                await akademikRef.add({
+                  'nama': nama,
+                  'nim': nim,
+                  'mataKuliah': mataKuliah,
+                  'nilai': nilai,
                 });
 
-                Navigator.pop(context);
+                if (context.mounted) Navigator.pop(context);
               },
               child: const Text('Simpan'),
             ),
@@ -121,8 +114,8 @@ class _AkademikPageState extends State<AkademikPage> {
     );
   }
 
-  void editData(int index) {
-    final data = dataAkademik[index];
+  void editData(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
 
     final namaController = TextEditingController(text: data['nama']);
 
@@ -188,7 +181,7 @@ class _AkademikPageState extends State<AkademikPage> {
               child: const Text('Batal'),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 final nama = namaController.text.trim();
                 final nim = nimController.text.trim();
                 final mataKuliah = mataKuliahController.text.trim();
@@ -215,16 +208,14 @@ class _AkademikPageState extends State<AkademikPage> {
                   return;
                 }
 
-                setState(() {
-                  dataAkademik[index] = {
-                    'nama': nama,
-                    'nim': nim,
-                    'mataKuliah': mataKuliah,
-                    'nilai': nilai,
-                  };
+                await akademikRef.doc(doc.id).update({
+                  'nama': nama,
+                  'nim': nim,
+                  'mataKuliah': mataKuliah,
+                  'nilai': nilai,
                 });
 
-                Navigator.pop(context);
+                if (context.mounted) Navigator.pop(context);
               },
               child: const Text('Simpan Perubahan'),
             ),
@@ -234,7 +225,7 @@ class _AkademikPageState extends State<AkademikPage> {
     );
   }
 
-  void hapusData(int index) {
+  void hapusData(String docId) {
     showDialog(
       context: context,
       builder: (context) {
@@ -249,12 +240,10 @@ class _AkademikPageState extends State<AkademikPage> {
               child: const Text('Batal'),
             ),
             ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  dataAkademik.removeAt(index);
-                });
+              onPressed: () async {
+                await akademikRef.doc(docId).delete();
 
-                Navigator.pop(context);
+                if (context.mounted) Navigator.pop(context);
               },
               child: const Text('Hapus'),
             ),
@@ -268,72 +257,92 @@ class _AkademikPageState extends State<AkademikPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Data Akademik'), centerTitle: true),
-      body: dataAkademik.isEmpty
-          ? const Center(
+      body: StreamBuilder<QuerySnapshot>(
+        stream: akademikRef.snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(
+              child: Text('Terjadi kesalahan: ${snapshot.error}'),
+            );
+          }
+
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final docs = snapshot.data?.docs ?? [];
+
+          if (docs.isEmpty) {
+            return const Center(
               child: Text(
                 'Belum ada data akademik.',
                 style: TextStyle(fontSize: 16),
               ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(20),
-              itemCount: dataAkademik.length,
-              itemBuilder: (context, index) {
-                final data = dataAkademik[index];
+            );
+          }
 
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 14),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const CircleAvatar(child: Icon(Icons.person)),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                data['nama'],
-                                style: const TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.bold,
-                                ),
+          return ListView.builder(
+            padding: const EdgeInsets.all(20),
+            itemCount: docs.length,
+            itemBuilder: (context, index) {
+              final doc = docs[index];
+              final data = doc.data() as Map<String, dynamic>;
+
+              return Card(
+                margin: const EdgeInsets.only(bottom: 14),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const CircleAvatar(child: Icon(Icons.person)),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              data['nama'] ?? '',
+                              style: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                            PopupMenuButton<String>(
-                              onSelected: (value) {
-                                if (value == 'edit') {
-                                  editData(index);
-                                } else if (value == 'hapus') {
-                                  hapusData(index);
-                                }
-                              },
-                              itemBuilder: (context) => const [
-                                PopupMenuItem(
-                                  value: 'edit',
-                                  child: Text('Edit'),
-                                ),
-                                PopupMenuItem(
-                                  value: 'hapus',
-                                  child: Text('Hapus'),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const Divider(height: 25),
-                        Text('NIM: ${data['nim']}'),
-                        const SizedBox(height: 6),
-                        Text('Mata Kuliah: ${data['mataKuliah']}'),
-                        const SizedBox(height: 6),
-                        Text('Nilai: ${data['nilai']}'),
-                      ],
-                    ),
+                          ),
+                          PopupMenuButton<String>(
+                            onSelected: (value) {
+                              if (value == 'edit') {
+                                editData(doc);
+                              } else if (value == 'hapus') {
+                                hapusData(doc.id);
+                              }
+                            },
+                            itemBuilder: (context) => const [
+                              PopupMenuItem(
+                                value: 'edit',
+                                child: Text('Edit'),
+                              ),
+                              PopupMenuItem(
+                                value: 'hapus',
+                                child: Text('Hapus'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 25),
+                      Text('NIM: ${data['nim'] ?? ''}'),
+                      const SizedBox(height: 6),
+                      Text('Mata Kuliah: ${data['mataKuliah'] ?? ''}'),
+                      const SizedBox(height: 6),
+                      Text('Nilai: ${data['nilai'] ?? ''}'),
+                    ],
                   ),
-                );
-              },
-            ),
+                ),
+              );
+            },
+          );
+        },
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: tambahData,
         icon: const Icon(Icons.add),
