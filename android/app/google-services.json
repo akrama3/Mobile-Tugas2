@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "974321642019",
+    "project_id": "edumate-tugas2",
+    "storage_bucket": "edumate-tugas2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:974321642019:android:a45b5a2ab298c943075f96",
+        "android_client_info": {
+          "package_name": "com.example.mobile_tugas2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCN3FnB7brU7Lv-KZViWpuv2yTYmcndA6k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
