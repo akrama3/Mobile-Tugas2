@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-
-import '../services/session_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class BantuanPage extends StatelessWidget {
   const BantuanPage({super.key});
@@ -34,7 +33,7 @@ class BantuanPage extends StatelessWidget {
       return;
     }
 
-    await SessionService.logout();
+    await FirebaseAuth.instance.signOut();
 
     if (!context.mounted) return;
 
