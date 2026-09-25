@@ -52,7 +52,7 @@ class _KalenderPageState extends State<KalenderPage> {
     final DateTime? hasil = await showDatePicker(
       context: context,
       initialDate: tanggalDipilih,
-      firstDate: DateTime(1900),
+      firstDate: DateTime(1800),
       lastDate: DateTime(2100),
     );
 
